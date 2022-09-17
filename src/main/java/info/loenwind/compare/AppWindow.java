@@ -48,9 +48,6 @@ public class AppWindow {
   private Component verticalStrut;
   private Component horizontalStrut_2;
 
-  /**
-   * Launch the application.
-   */
   public static void run() {
     EventQueue.invokeLater(new Runnable() {
       @Override
@@ -65,16 +62,10 @@ public class AppWindow {
     });
   }
 
-  /**
-   * Create the application.
-   */
   public AppWindow() {
     initialize();
   }
 
-  /**
-   * Initialize the contents of the frame.
-   */
   private void initialize() {
     try {
       UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -166,9 +157,9 @@ public class AppWindow {
       public void actionPerformed(ActionEvent e) {
         JFileChooser chooser = new JFileChooser();
         if (textField.getText().isEmpty()) {
-          chooser.setCurrentDirectory(new java.io.File("."));
+          chooser.setCurrentDirectory(new File("."));
         } else {
-          chooser.setCurrentDirectory(new java.io.File(textField.getText()));
+          chooser.setCurrentDirectory(new File(textField.getText()));
         }
         chooser.setDialogTitle("Select images folder");
         chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
@@ -303,7 +294,6 @@ public class AppWindow {
         }
       }
     });
-    // buttonCompare.setEnabled(false);
     GridBagConstraints gbc_btnNewButton_2 = new GridBagConstraints();
     gbc_btnNewButton_2.insets = new Insets(0, 0, 5, 5);
     gbc_btnNewButton_2.gridx = 3;

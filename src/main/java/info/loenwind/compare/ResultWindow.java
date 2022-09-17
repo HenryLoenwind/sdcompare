@@ -41,9 +41,6 @@ public class ResultWindow extends JFrame {
   private JTable table;
   private JTabbedPane tabbedPane;
 
-  /**
-   * Create the dialog.
-   */
   public ResultWindow(DefaultTableModel model, String result) {
     setBounds(100, 100, 640, 480);
     setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
@@ -67,14 +64,10 @@ public class ResultWindow extends JFrame {
 
               Component c = super.prepareRenderer(renderer, row, col);
               if (c instanceof JComponent) {
-                // try {
                 JComponent jc = (JComponent) c;
                 String name = getValueAt(row, convertColumnIndexToModel(1)).toString();
-                String html = "<html><body><img src=\"" + new File(name).toURI()/* .toURL() */ + "\"></body></html>";
+                String html = "<html><body><img src=\"" + new File(name).toURI() + "\"></body></html>";
                 jc.setToolTipText(html);
-                // } catch (MalformedURLException e) {
-                // e.printStackTrace();
-                // }
               }
               return c;
             }

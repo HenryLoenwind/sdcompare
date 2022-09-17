@@ -18,8 +18,6 @@ import javax.swing.JPanel;
 /**
  * @beaninfo attribute: isContainer false description: A component that displays an image.
  * 
- * @author micaja
- *
  */
 public class ImagePanel extends JPanel {
 
@@ -30,6 +28,9 @@ public class ImagePanel extends JPanel {
   private boolean hovered = false;
   private Rectangle imgpos;
 
+  /**
+   * A dummy panel that is resized to match the current image so mouse enter and exit events can be used.
+   */
   private final JPanel overlay;
 
   public ImagePanel() {
@@ -139,6 +140,7 @@ public class ImagePanel extends JPanel {
             listener1.run();
             break;
           case MouseEvent.BUTTON2:
+          case MouseEvent.BUTTON3:
             listener2.run();
             break;
           }
