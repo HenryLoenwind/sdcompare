@@ -8,6 +8,8 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -20,6 +22,7 @@ import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
@@ -43,6 +46,8 @@ public class ImgWindow extends JFrame {
   private JLabel textPartial;
   private JLabel textRemaining;
   private JLabel textFully;
+
+  private File trash = null;
 
   private final List<File> allFiles = new ArrayList<>();
   private final List<File> excludedFiles = new ArrayList<>();
@@ -280,6 +285,7 @@ public class ImgWindow extends JFrame {
         likes.remove(pair.getA());
         nextRound.remove(pair.getA());
         excludedFiles.add(pair.getA());
+        trash(pair.getA());
         nextPair(pair.getB(), true);
       }
     });
@@ -339,6 +345,7 @@ public class ImgWindow extends JFrame {
         likes.remove(pair.getB());
         nextRound.remove(pair.getB());
         excludedFiles.add(pair.getB());
+        trash(pair.getB());
         nextPair(pair.getA(), false);
       }
     });
@@ -534,4 +541,27 @@ public class ImgWindow extends JFrame {
     }
     return b.toString();
   }
+
+  public void setExclusionFolder(File file) {
+    trash = file;
+  }
+
+  private void trash(File file) {
+    if (trash != null) {
+      String name = file.getName();
+      File target = new File(trash, name);
+      while (target.exists()) {
+        target = new File(trash, (rollingPostfix++) + "_" + name);
+      }
+      try {
+        Files.move(file.toPath(), target.toPath());
+      } catch (IOException ex) {
+        ex.printStackTrace();
+        JOptionPane.showMessageDialog(this, "The file " + name + " could not be moved to " + target + ". Message: " + ex.getLocalizedMessage(), "Error",
+            JOptionPane.WARNING_MESSAGE);
+      }
+    }
+  }
+
+  private int rollingPostfix = 0;
 }

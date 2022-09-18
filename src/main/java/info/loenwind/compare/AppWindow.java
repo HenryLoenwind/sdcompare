@@ -22,9 +22,11 @@ import java.util.Locale;
 
 import javax.swing.Box;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
@@ -47,6 +49,9 @@ public class AppWindow {
   private Component horizontalStrut_1;
   private Component verticalStrut;
   private Component horizontalStrut_2;
+  private JCheckBox checkMove;
+  private JTextField textMove;
+  private JButton buttonMove;
 
   public static void run() {
     EventQueue.invokeLater(new Runnable() {
@@ -77,9 +82,9 @@ public class AppWindow {
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     GridBagLayout gridBagLayout = new GridBagLayout();
     gridBagLayout.columnWidths = new int[] { 0, 0, 0, 0, 0, 0, 0, 0 };
-    gridBagLayout.rowHeights = new int[] { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    gridBagLayout.rowHeights = new int[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     gridBagLayout.columnWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, Double.MIN_VALUE };
-    gridBagLayout.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE };
+    gridBagLayout.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE };
     frame.getContentPane().setLayout(gridBagLayout);
 
     verticalStrut = Box.createVerticalStrut(20);
@@ -179,7 +184,7 @@ public class AppWindow {
       }
     });
     GridBagConstraints gbc_buttonSelect = new GridBagConstraints();
-    gbc_buttonSelect.insets = new Insets(0, 0, 5, 0);
+    gbc_buttonSelect.insets = new Insets(0, 0, 5, 5);
     gbc_buttonSelect.gridx = 5;
     gbc_buttonSelect.gridy = 1;
     frame.getContentPane().add(buttonSelect, gbc_buttonSelect);
@@ -253,7 +258,7 @@ public class AppWindow {
     labelScan = new JLabel("Please select a folder");
     GridBagConstraints gbc_labelScan = new GridBagConstraints();
     gbc_labelScan.gridwidth = 2;
-    gbc_labelScan.insets = new Insets(0, 0, 5, 0);
+    gbc_labelScan.insets = new Insets(0, 0, 5, 5);
     gbc_labelScan.gridx = 4;
     gbc_labelScan.gridy = 3;
     frame.getContentPane().add(labelScan, gbc_labelScan);
@@ -264,14 +269,6 @@ public class AppWindow {
     gbc_lblNewLabel_3.gridx = 1;
     gbc_lblNewLabel_3.gridy = 5;
     frame.getContentPane().add(lblNewLabel_3, gbc_lblNewLabel_3);
-
-    JButton buttonExit = new JButton("Exit");
-    buttonExit.addActionListener(new ActionListener() {
-      @Override
-      public void actionPerformed(ActionEvent e) {
-        frame.dispose();
-      }
-    });
 
     buttonCompare = new JButton("Compare images");
     buttonCompare.setEnabled(false);
@@ -288,6 +285,14 @@ public class AppWindow {
           }
         });
         imgframe.setFiles(files);
+        if (checkMove.isSelected()) {
+          File file = new File(textMove.getText());
+          if (file.isDirectory()) {
+            imgframe.setExclusionFolder(file);
+          } else {
+            JOptionPane.showMessageDialog(frame, file + " is not a valid folder. Moving excluded files is disabled.", "Error", JOptionPane.WARNING_MESSAGE);
+          }
+        }
         imgframe.setVisible(true);
         if ((frame.getExtendedState() & JFrame.MAXIMIZED_BOTH) != 0) {
           imgframe.setExtendedState(imgframe.getExtendedState() | JFrame.MAXIMIZED_BOTH);
@@ -303,14 +308,58 @@ public class AppWindow {
     labelCompare = new JLabel("Please scan for images");
     GridBagConstraints gbc_labelCompare = new GridBagConstraints();
     gbc_labelCompare.gridwidth = 2;
-    gbc_labelCompare.insets = new Insets(0, 0, 5, 0);
+    gbc_labelCompare.insets = new Insets(0, 0, 5, 5);
     gbc_labelCompare.gridx = 4;
     gbc_labelCompare.gridy = 5;
     frame.getContentPane().add(labelCompare, gbc_labelCompare);
-    GridBagConstraints gbc_buttonExit = new GridBagConstraints();
-    gbc_buttonExit.gridx = 5;
-    gbc_buttonExit.gridy = 7;
-    frame.getContentPane().add(buttonExit, gbc_buttonExit);
+
+    checkMove = new JCheckBox("Enable moving excluded files to this folder:");
+    GridBagConstraints gbc_checkMove = new GridBagConstraints();
+    gbc_checkMove.anchor = GridBagConstraints.NORTHWEST;
+    gbc_checkMove.gridwidth = 2;
+    gbc_checkMove.insets = new Insets(0, 0, 5, 5);
+    gbc_checkMove.gridx = 3;
+    gbc_checkMove.gridy = 7;
+    frame.getContentPane().add(checkMove, gbc_checkMove);
+
+    textMove = new JTextField();
+    GridBagConstraints gbc_textMove = new GridBagConstraints();
+    gbc_textMove.insets = new Insets(0, 0, 0, 5);
+    gbc_textMove.fill = GridBagConstraints.HORIZONTAL;
+    gbc_textMove.gridx = 4;
+    gbc_textMove.gridy = 8;
+    frame.getContentPane().add(textMove, gbc_textMove);
+    textMove.setColumns(10);
+
+    buttonMove = new JButton("Select...");
+    buttonMove.addActionListener(new ActionListener() {
+      @Override
+      public void actionPerformed(ActionEvent e) {
+        JFileChooser chooser = new JFileChooser();
+        if (textMove.getText().isEmpty()) {
+          chooser.setCurrentDirectory(new File("."));
+        } else {
+          chooser.setCurrentDirectory(new File(textMove.getText()));
+        }
+        chooser.setDialogTitle("Select folder for excluded images");
+        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        chooser.setAcceptAllFileFilterUsed(false);
+        if (chooser.showSaveDialog(frame) == JFileChooser.APPROVE_OPTION) {
+          try {
+            textMove.setText(chooser.getSelectedFile().getCanonicalPath().toString());
+          } catch (IOException e1) {
+            e1.printStackTrace();
+            textMove.setText(e1.getLocalizedMessage());
+            checkMove.setSelected(false);
+          }
+        }
+      }
+    });
+    GridBagConstraints gbc_buttonMove = new GridBagConstraints();
+    gbc_buttonMove.insets = new Insets(0, 0, 0, 5);
+    gbc_buttonMove.gridx = 5;
+    gbc_buttonMove.gridy = 8;
+    frame.getContentPane().add(buttonMove, gbc_buttonMove);
   }
 
 }
