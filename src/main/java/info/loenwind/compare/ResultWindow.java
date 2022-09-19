@@ -42,6 +42,7 @@ public class ResultWindow extends JFrame {
   private JTabbedPane tabbedPane;
 
   public ResultWindow(DefaultTableModel model, String result) {
+    super(Main.APP_NAME);
     setBounds(100, 100, 640, 480);
     setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
     getContentPane().setLayout(new BorderLayout());
@@ -78,40 +79,45 @@ public class ResultWindow extends JFrame {
           sortKeys.add(new RowSorter.SortKey(0, SortOrder.DESCENDING));
           table.getRowSorter().setSortKeys(sortKeys);
 
-          table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-
-          for (int column = 0; column < table.getColumnCount(); column++) {
-            TableColumn tableColumn = table.getColumnModel().getColumn(column);
-            int preferredWidth = tableColumn.getMinWidth();
-            int maxWidth = tableColumn.getMaxWidth();
-            for (int row = 0; row < table.getRowCount(); row++) {
-              TableCellRenderer cellRenderer = table.getCellRenderer(row, column);
-              Component c = table.prepareRenderer(cellRenderer, row, column);
-              int width = c.getPreferredSize().width + table.getIntercellSpacing().width;
-              preferredWidth = Math.max(preferredWidth, width);
-              if (preferredWidth >= maxWidth) {
-                preferredWidth = maxWidth;
-                break;
+          if (table.getRowCount() < 1000) {
+            table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+            for (int column = 0; column < table.getColumnCount(); column++) {
+              TableColumn tableColumn = table.getColumnModel().getColumn(column);
+              int preferredWidth = tableColumn.getMinWidth();
+              int maxWidth = tableColumn.getMaxWidth();
+              for (int row = 0; row < table.getRowCount(); row++) {
+                TableCellRenderer cellRenderer = table.getCellRenderer(row, column);
+                Component c = table.prepareRenderer(cellRenderer, row, column);
+                int width = c.getPreferredSize().width + table.getIntercellSpacing().width;
+                preferredWidth = Math.max(preferredWidth, width);
+                if (preferredWidth >= maxWidth) {
+                  preferredWidth = maxWidth;
+                  break;
+                }
               }
+
+              tableColumn.setPreferredWidth(preferredWidth);
+            }
+          } else {
+            table.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
+            table.getColumnModel().getColumn(0).setPreferredWidth(50);
+            table.getColumnModel().getColumn(1).setPreferredWidth(1000);
+          }
+
+          table.addMouseListener(new MouseAdapter() {
+
+            private final int defaultDelay = ToolTipManager.sharedInstance().getInitialDelay();
+
+            @Override
+            public void mouseEntered(MouseEvent me) {
+              ToolTipManager.sharedInstance().setInitialDelay(0);
             }
 
-            table.addMouseListener(new MouseAdapter() {
-
-              private final int defaultDelay = ToolTipManager.sharedInstance().getInitialDelay();
-
-              @Override
-              public void mouseEntered(MouseEvent me) {
-                ToolTipManager.sharedInstance().setInitialDelay(0);
-              }
-
-              @Override
-              public void mouseExited(MouseEvent me) {
-                ToolTipManager.sharedInstance().setInitialDelay(defaultDelay);
-              }
-            });
-
-            tableColumn.setPreferredWidth(preferredWidth);
-          }
+            @Override
+            public void mouseExited(MouseEvent me) {
+              ToolTipManager.sharedInstance().setInitialDelay(defaultDelay);
+            }
+          });
 
           panel.add(new JScrollPane(table));
         }

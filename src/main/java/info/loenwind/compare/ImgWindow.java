@@ -6,10 +6,11 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -18,20 +19,38 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.swing.AbstractAction;
 import javax.swing.Box;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableModel;
 
+import info.loenwind.compare.tools.Settings;
+
 public class ImgWindow extends JFrame {
 
   private static final long serialVersionUID = -7998385048393275848L;
+
+  private static final AbstractAction CLICK_ACTION = new AbstractAction() {
+    private static final long serialVersionUID = 2969505039616463263L;
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+      if (e.getSource() instanceof JButton) {
+        ((JButton) e.getSource()).doClick();
+        ((JButton) e.getSource()).requestFocusInWindow();
+      }
+    }
+  };
+
   private JPanel contentPane;
   private ImagePanel imagePanelL;
   private ImagePanel imagePanelR;
@@ -47,8 +66,6 @@ public class ImgWindow extends JFrame {
   private JLabel textRemaining;
   private JLabel textFully;
 
-  private File trash = null;
-
   private final List<File> allFiles = new ArrayList<>();
   private final List<File> excludedFiles = new ArrayList<>();
   private final List<File> currentRound = new ArrayList<>();
@@ -61,12 +78,15 @@ public class ImgWindow extends JFrame {
 
   private FilePair pair = null;
 
+  private final Settings settings;
+
   public boolean setFiles(List<File> files) {
     allFiles.addAll(files);
     currentRound.addAll(files);
     for (File file : files) {
       likes.put(file, new CompData());
     }
+    Collections.shuffle(currentRound);
     nextPair();
     return pair != null;
   }
@@ -86,6 +106,7 @@ public class ImgWindow extends JFrame {
       imagePanelL.setImage(null);
       imagePanelR.setImage(null);
       updateLabels();
+      openResultWindow();
     } else {
       if (isB) {
         pair = new FilePair(pair.getB(), pair.getA());
@@ -163,6 +184,24 @@ public class ImgWindow extends JFrame {
     return null;
   }
 
+  private void vote(File pro, File con) {
+    likes.get(pro).like();
+    likes.get(con).dislike();
+    if (settings.isSuddenDeathEnabled()) {
+      nextRound.remove(con);
+      doneFiles.add(con);
+    }
+    nextPair();
+  }
+
+  private void exclude(File pro, File con, boolean swap) {
+    likes.remove(con);
+    nextRound.remove(con);
+    excludedFiles.add(con);
+    trash(con);
+    nextPair(pro, swap);
+  }
+
   private void updateLabels() {
     // files
     textTotal.setText(allFiles.size() + "");
@@ -172,7 +211,7 @@ public class ImgWindow extends JFrame {
     // ratings
     int rounds = currentRound.size() + nextRound.size();
     textUnrated.setText(inFirstRound ? (currentRound.size() + "") : "0");
-    textPartial.setText(rounds + "");
+    textPartial.setText((inFirstRound ? nextRound.size() : rounds) + "");
     textFully.setText(doneFiles.size() + "");
     // result
     int max = 0, maxC = 0;
@@ -191,7 +230,9 @@ public class ImgWindow extends JFrame {
   /**
    * Create the frame.
    */
-  public ImgWindow() {
+  public ImgWindow(Settings settings) {
+    super(Main.APP_NAME);
+    this.settings = settings;
     setBounds(100, 100, 640, 480);
     contentPane = new JPanel();
     contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -279,16 +320,8 @@ public class ImgWindow extends JFrame {
     panel_2.setLayout(gbl_panel_2);
 
     buttonExcludeL = new JButton("Exclude");
-    buttonExcludeL.addActionListener(new ActionListener() {
-      @Override
-      public void actionPerformed(ActionEvent e) {
-        likes.remove(pair.getA());
-        nextRound.remove(pair.getA());
-        excludedFiles.add(pair.getA());
-        trash(pair.getA());
-        nextPair(pair.getB(), true);
-      }
-    });
+    buttonExcludeL.setToolTipText("Shortcuts: 1, Keypad 1");
+    buttonExcludeL.addActionListener(e -> exclude(pair.getB(), pair.getA(), true));
     GridBagConstraints gbc_buttonExcludeL = new GridBagConstraints();
     gbc_buttonExcludeL.insets = new Insets(0, 0, 0, 5);
     gbc_buttonExcludeL.gridx = 0;
@@ -296,19 +329,15 @@ public class ImgWindow extends JFrame {
     panel_2.add(buttonExcludeL, gbc_buttonExcludeL);
 
     buttonLikeL = new JButton("    Like    ");
-    buttonLikeL.addActionListener(new ActionListener() {
-      @Override
-      public void actionPerformed(ActionEvent e) {
-        likes.get(pair.getA()).like();
-        likes.get(pair.getB()).dislike();
-        nextPair();
-      }
-    });
+    buttonLikeL.setToolTipText("Shortcuts: Left, 4, Keypad 4");
+    buttonLikeL.addActionListener(e -> vote(pair.getA(), pair.getB()));
     GridBagConstraints gbc_buttonLikeL = new GridBagConstraints();
     gbc_buttonLikeL.gridx = 1;
     gbc_buttonLikeL.gridy = 0;
     panel_2.add(buttonLikeL, gbc_buttonLikeL);
     imagePanelL.addClickListener(() -> buttonLikeL.doClick(), () -> buttonExcludeL.doClick());
+    setupHotkeys(buttonLikeL, KeyEvent.VK_LEFT, KeyEvent.VK_KP_LEFT, KeyEvent.VK_4, KeyEvent.VK_NUMPAD4);
+    setupHotkeys(buttonExcludeL, KeyEvent.VK_1, KeyEvent.VK_NUMPAD1);
 
     JPanel panel_3 = new JPanel();
     GridBagConstraints gbc_panel_3 = new GridBagConstraints();
@@ -324,14 +353,8 @@ public class ImgWindow extends JFrame {
     panel_3.setLayout(gbl_panel_3);
 
     buttonLikeR = new JButton("    Like    ");
-    buttonLikeR.addActionListener(new ActionListener() {
-      @Override
-      public void actionPerformed(ActionEvent e) {
-        likes.get(pair.getA()).dislike();
-        likes.get(pair.getB()).like();
-        nextPair();
-      }
-    });
+    buttonLikeR.setToolTipText("Shortcuts: Right, 6, Keypad 6");
+    buttonLikeR.addActionListener(e -> vote(pair.getB(), pair.getA()));
     GridBagConstraints gbc_buttonLikeR = new GridBagConstraints();
     gbc_buttonLikeR.insets = new Insets(0, 0, 0, 5);
     gbc_buttonLikeR.gridx = 0;
@@ -339,21 +362,15 @@ public class ImgWindow extends JFrame {
     panel_3.add(buttonLikeR, gbc_buttonLikeR);
 
     buttonExcludeR = new JButton("Exclude");
-    buttonExcludeR.addActionListener(new ActionListener() {
-      @Override
-      public void actionPerformed(ActionEvent e) {
-        likes.remove(pair.getB());
-        nextRound.remove(pair.getB());
-        excludedFiles.add(pair.getB());
-        trash(pair.getB());
-        nextPair(pair.getA(), false);
-      }
-    });
+    buttonExcludeR.setToolTipText("Shortcuts: 3, Keypad 3");
+    buttonExcludeR.addActionListener(e -> exclude(pair.getA(), pair.getB(), false));
     GridBagConstraints gbc_buttonExcludeR = new GridBagConstraints();
     gbc_buttonExcludeR.gridx = 1;
     gbc_buttonExcludeR.gridy = 0;
     panel_3.add(buttonExcludeR, gbc_buttonExcludeR);
     imagePanelR.addClickListener(() -> buttonLikeR.doClick(), () -> buttonExcludeR.doClick());
+    setupHotkeys(buttonLikeR, KeyEvent.VK_RIGHT, KeyEvent.VK_KP_RIGHT, KeyEvent.VK_6, KeyEvent.VK_NUMPAD6);
+    setupHotkeys(buttonExcludeR, KeyEvent.VK_3, KeyEvent.VK_NUMPAD3);
 
     JPanel panel_1 = new JPanel();
     GridBagConstraints gbc_panel_1 = new GridBagConstraints();
@@ -460,16 +477,7 @@ public class ImgWindow extends JFrame {
     panel_1.add(horizontalStrut_1, gbc_horizontalStrut_1);
 
     JButton btnNewButton_4 = new JButton("Show ratings...");
-    btnNewButton_4.addActionListener(new ActionListener() {
-      @Override
-      public void actionPerformed(ActionEvent e) {
-        ResultWindow resultWindow = new ResultWindow(getTableModel(), getResultString());
-        resultWindow.setVisible(true);
-        if ((ImgWindow.this.getExtendedState() & JFrame.MAXIMIZED_BOTH) != 0) {
-          resultWindow.setExtendedState(resultWindow.getExtendedState() | JFrame.MAXIMIZED_BOTH);
-        }
-      }
-    });
+    btnNewButton_4.addActionListener(e -> openResultWindow());
     GridBagConstraints gbc_btnNewButton_4 = new GridBagConstraints();
     gbc_btnNewButton_4.gridheight = 2;
     gbc_btnNewButton_4.gridwidth = 2;
@@ -510,6 +518,13 @@ public class ImgWindow extends JFrame {
     updateLabels();
   }
 
+  private static void setupHotkeys(JButton button, int... keys) {
+    for (int key : keys) {
+      button.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(key, 0), "click");
+    }
+    button.getActionMap().put("click", CLICK_ACTION);
+  }
+
   private DefaultTableModel getTableModel() {
     String[] cols = { "Score", "Image" };
     List<Object[]> rows = new ArrayList<>();
@@ -542,19 +557,22 @@ public class ImgWindow extends JFrame {
     return b.toString();
   }
 
-  public void setExclusionFolder(File file) {
-    trash = file;
-  }
-
   private void trash(File file) {
-    if (trash != null) {
+    if (settings.isAutoTrashingEnabled() && settings.isTrashFolderValid()) {
       String name = file.getName();
-      File target = new File(trash, name);
+      File target = new File(settings.getTrashFolder(), name);
+      int rollingPostfix = 0;
       while (target.exists()) {
-        target = new File(trash, (rollingPostfix++) + "_" + name);
+        target = new File(settings.getTrashFolder(), insertNumber(name, rollingPostfix++));
       }
       try {
         Files.move(file.toPath(), target.toPath());
+        settings.addFileID(file, "Moved from " + file);
+        String safename = (name.contains(" ") ? "\"" + name + "\"" : name) + " ";
+        String prefix = System.lineSeparator() + safename.replaceAll(".", " ");
+        Files.write(new File(settings.getTrashFolder(), "files.bbs").toPath(),
+            (safename + String.join(prefix, settings.getFileID(file)) + System.lineSeparator()).getBytes(), StandardOpenOption.APPEND,
+            StandardOpenOption.CREATE);
       } catch (IOException ex) {
         ex.printStackTrace();
         JOptionPane.showMessageDialog(this, "The file " + name + " could not be moved to " + target + ". Message: " + ex.getLocalizedMessage(), "Error",
@@ -563,5 +581,16 @@ public class ImgWindow extends JFrame {
     }
   }
 
-  private int rollingPostfix = 0;
+  private void openResultWindow() {
+    ResultWindow resultWindow = new ResultWindow(getTableModel(), getResultString());
+    resultWindow.setVisible(true);
+    if ((ImgWindow.this.getExtendedState() & JFrame.MAXIMIZED_BOTH) != 0) {
+      resultWindow.setExtendedState(resultWindow.getExtendedState() | JFrame.MAXIMIZED_BOTH);
+    }
+  }
+
+  protected static String insertNumber(String name, int number) {
+    return name.contains(".") ? name.replaceFirst("\\.([^.]+)$", "_" + number + ".$1") : name + "_" + number;
+  }
+
 }
