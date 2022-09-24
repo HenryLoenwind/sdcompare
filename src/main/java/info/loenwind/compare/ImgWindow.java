@@ -275,7 +275,7 @@ public class ImgWindow extends JFrame {
     gbc_labelR.gridy = 0;
     panel.add(labelR, gbc_labelR);
 
-    imagePanelL = new ImagePanel();
+    imagePanelL = new ImagePanel(settings);
     imagePanelL.setLabel(labelL);
     GridBagConstraints gbc_imagePanelL = new GridBagConstraints();
     gbc_imagePanelL.weighty = 1.0;
@@ -293,7 +293,7 @@ public class ImgWindow extends JFrame {
     gbc_horizontalStrut_2.gridy = 1;
     panel.add(horizontalStrut_2, gbc_horizontalStrut_2);
 
-    imagePanelR = new ImagePanel();
+    imagePanelR = new ImagePanel(settings);
     imagePanelR.setLabel(labelR);
     imagePanelR.setOther(imagePanelL);
     imagePanelL.setOther(imagePanelR);
@@ -582,7 +582,7 @@ public class ImgWindow extends JFrame {
   }
 
   private void openResultWindow() {
-    ResultWindow resultWindow = new ResultWindow(getTableModel(), getResultString());
+    ResultWindow resultWindow = new ResultWindow(settings, getTableModel(), getResultString());
     resultWindow.setVisible(true);
     if ((ImgWindow.this.getExtendedState() & JFrame.MAXIMIZED_BOTH) != 0) {
       resultWindow.setExtendedState(resultWindow.getExtendedState() | JFrame.MAXIMIZED_BOTH);

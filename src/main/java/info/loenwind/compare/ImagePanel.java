@@ -15,6 +15,8 @@ import javax.imageio.ImageIO;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import info.loenwind.compare.tools.Settings;
+
 /**
  * @beaninfo attribute: isContainer false description: A component that displays an image.
  * 
@@ -22,6 +24,7 @@ import javax.swing.JPanel;
 public class ImagePanel extends JPanel {
 
   private static final long serialVersionUID = -3470117837379811002L;
+  private File file;
   private BufferedImage image;
   private JLabel label = null;
   private ImagePanel other = null;
@@ -32,15 +35,18 @@ public class ImagePanel extends JPanel {
    * A dummy panel that is resized to match the current image so mouse enter and exit events can be used.
    */
   private final JPanel overlay;
+  private final Settings settings;
 
-  public ImagePanel() {
+  public ImagePanel(Settings settings) {
     super();
+    this.settings = settings;
     overlay = new JPanel();
     overlay.setOpaque(false);
     add(overlay);
   }
 
   public void setImage(File file) {
+    this.file = file;
     if (file == null) {
       image = null;
       label.setText("No image");
@@ -53,7 +59,8 @@ public class ImagePanel extends JPanel {
     } catch (IOException ex) {
       ex.printStackTrace();
       image = null;
-      label.setText(ex.getLocalizedMessage());
+      this.file = null;
+      label.setText(file.getName() + " " + ex.getLocalizedMessage());
     }
   }
 
@@ -69,6 +76,7 @@ public class ImagePanel extends JPanel {
       }
       int imgW = image.getWidth();
       int imgH = image.getHeight();
+      settings.setImageSize(file, imgW, imgH);
       int targetW = imgW;
       int targetH = imgH;
       double ar = imgW / (double) imgH;

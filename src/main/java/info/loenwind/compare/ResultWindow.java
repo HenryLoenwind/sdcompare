@@ -8,18 +8,13 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
-import javax.swing.JFileChooser;
 import javax.swing.JFrame;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
@@ -29,20 +24,25 @@ import javax.swing.RowSorter;
 import javax.swing.SortOrder;
 import javax.swing.ToolTipManager;
 import javax.swing.border.EmptyBorder;
-import javax.swing.filechooser.FileFilter;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 
+import info.loenwind.compare.tools.Settings;
+
 public class ResultWindow extends JFrame {
 
   private static final long serialVersionUID = -6097476795465117300L;
+
   private final JPanel contentPanel = new JPanel();
   private JTable table;
   private JTabbedPane tabbedPane;
+  @SuppressWarnings("unused")
+  private final Settings settings;
 
-  public ResultWindow(DefaultTableModel model, String result) {
+  public ResultWindow(Settings settings, DefaultTableModel model, String result) {
     super(Main.APP_NAME);
+    this.settings = settings;
     setBounds(100, 100, 640, 480);
     setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
     getContentPane().setLayout(new BorderLayout());
@@ -141,6 +141,7 @@ public class ResultWindow extends JFrame {
       {
         JButton okButton = new JButton("OK");
         okButton.addActionListener(new ActionListener() {
+
           @Override
           public void actionPerformed(ActionEvent e) {
             dispose();
@@ -152,74 +153,24 @@ public class ResultWindow extends JFrame {
       }
       {
         JButton buttonSave = new JButton("Save...");
-        buttonSave.addActionListener(new ActionListener() {
-          @Override
-          public void actionPerformed(ActionEvent e) {
-            boolean csv = tabbedPane.getSelectedIndex() == 0;
-
-            JFileChooser chooser = new JFileChooser();
-            chooser.setDialogTitle("Save report");
-            chooser.setFileFilter(new FileFilter() {
-
-              @Override
-              public String getDescription() {
-                return csv ? "Comma Separed Values (csv)" : "Plain Text (txt)";
-              }
-
-              @Override
-              public boolean accept(File f) {
-                String name = f.getName().toLowerCase(Locale.ENGLISH);
-                return !name.contains(".") || name.endsWith(csv ? ".csv" : ".txt");
-              }
-            });
-            if (chooser.showSaveDialog(ResultWindow.this) == JFileChooser.APPROVE_OPTION) {
-              String name = chooser.getSelectedFile().getName().toString();
-              if (!name.contains(".")) {
-                name = chooser.getSelectedFile().toString() + (csv ? ".csv" : ".txt");
-              } else {
-                name = chooser.getSelectedFile().toString();
-              }
-              File file = new File(name);
-              if (file.exists()) {
-                if (JOptionPane.showConfirmDialog(ResultWindow.this, "The file " + name + " already exists. Overwrite?", "Save Report",
-                    JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.YES_OPTION) {
-                  return;
-                }
-              }
-              try {
-                FileWriter myWriter = new FileWriter(file);
-                if (csv) {
-                  for (int i = 0; i < table.getRowCount(); i++) {
-                    String line = "";
-                    for (int j = 0; j < table.getColumnCount(); j++) {
-                      Object value = table.getValueAt(i, j);
-                      if (value == null) {
-                        line += ";";
-                      } else if (value instanceof Integer) {
-                        line += value + ";";
-                      } else {
-                        line += "\"" + value + "\";";
-                      }
-                    }
-                    myWriter.write(line.substring(0, line.length() - 1) + System.lineSeparator());
-                  }
-
-                } else {
-                  myWriter.write(result);
-                }
-                myWriter.close();
-              } catch (IOException ex) {
-                JOptionPane.showMessageDialog(ResultWindow.this, "The file " + name + " could not be written. Message: " + ex.getLocalizedMessage(), "Error",
-                    JOptionPane.WARNING_MESSAGE);
-                ex.printStackTrace();
-              }
-            }
-
-          }
-        });
+        ResultWindow owner = this;
+        buttonSave.addActionListener(new SaveAction(owner, result));
         buttonPane.add(buttonSave);
       }
+      {
+        JButton btnNewButton = new JButton("Export...");
+        btnNewButton.addActionListener(new ExportAction(this, settings));
+        buttonPane.add(btnNewButton);
+      }
     }
+  }
+
+  JTable getTable() {
+    return table;
+  }
+
+  JTabbedPane getTabbedPane() {
+    return tabbedPane;
   }
 
 }

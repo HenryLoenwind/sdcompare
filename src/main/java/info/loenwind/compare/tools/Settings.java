@@ -9,9 +9,19 @@ import java.util.Map;
 
 public final class Settings {
 
+  private static class Pair {
+    int w, h;
+
+    Pair(int w, int h) {
+      this.w = w;
+      this.h = h;
+    }
+  }
+
   private File sourceFolder, targetFolder, trashFolder;
   private boolean targetFolderValid, trashFolderValid, autoTrashingEnabled, suddenDeathEnabled;
   private final Map<File, List<String>> fileIds = new HashMap<>();
+  private final Map<File, Pair> sizes = new HashMap<>();
 
   public File getSourceFolder() {
     return sourceFolder;
@@ -85,6 +95,18 @@ public final class Settings {
 
   public void setSuddenDeathEnabled(boolean suddenDeathEnabled) {
     this.suddenDeathEnabled = suddenDeathEnabled;
+  }
+
+  public void setImageSize(File file, int imgW, int imgH) {
+    sizes.put(file, new Pair(imgW, imgH));
+  }
+
+  public int getWidth(File file) {
+    return sizes.computeIfAbsent(file, f -> new Pair(512, 512)).w;
+  }
+
+  public int getHeight(File file) {
+    return sizes.computeIfAbsent(file, f -> new Pair(512, 512)).h;
   }
 
 }
