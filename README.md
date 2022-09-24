@@ -34,6 +34,14 @@ You can view the results as a (sortable) table or as pure text. When you click "
 
 You can hover over the rows in the table to see a preview of the file.
 
+With the "Export..." button (not in the screenshot above), you can convert the image list into other forms:
+
+![image](https://user-images.githubusercontent.com/1485873/192079252-d3896e74-8759-471c-a5e2-567ba595859e.png)
+
+At the moment, the only form is a script to run the selected files through txt2img again. This is useful if you first want to create a lot of images quickly to check the general composition and then run only specific seeds with more time-consuming settings.
+
+The export can generate .cmd/.bat and .sh scripts. "@echo off" and "pause" are ignored for .sh; "title" produces "echo" statements for .sh/.bat.
+
 ## Installation
 
 Install Java version 8 (or higher). Download the jar file from the release (on the right side -> ), double-click it.
