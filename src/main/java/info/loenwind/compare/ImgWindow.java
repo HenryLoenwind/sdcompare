@@ -10,6 +10,7 @@ import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,6 +34,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableModel;
 
+import info.loenwind.compare.tools.FileFinder;
 import info.loenwind.compare.tools.Settings;
 
 public class ImgWindow extends JFrame {
@@ -577,6 +579,15 @@ public class ImgWindow extends JFrame {
         ex.printStackTrace();
         JOptionPane.showMessageDialog(this, "The file " + name + " could not be moved to " + target + ". Message: " + ex.getLocalizedMessage(), "Error",
             JOptionPane.WARNING_MESSAGE);
+        return;
+      }
+      // also move related files
+      for (Path path : new FileFinder(file.toPath()).getMatches()) {
+        try {
+          Files.move(path, new File(settings.getTrashFolder(), path.getFileName().toString()).toPath());
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
       }
     }
   }
