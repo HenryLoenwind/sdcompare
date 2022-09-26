@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -18,6 +20,7 @@ import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+import info.loenwind.compare.ExportOptions.Options.Commands;
 import info.loenwind.compare.ExportOptions.Options.Select;
 import info.loenwind.compare.tools.Settings;
 
@@ -38,7 +41,7 @@ final class ExportAction implements ActionListener {
     ExportOptions.Options options = new ExportOptions.Options();
     ExportOptions exportOptions = new ExportOptions(owner, options);
     exportOptions.setVisible(true);
-    if (options.ok) {
+    if (options.command != Commands.ABORT) {
 
       JFileChooser chooser = new JFileChooser();
       chooser.setDialogTitle("Export");
@@ -66,8 +69,7 @@ final class ExportAction implements ActionListener {
         }
         name = file.toString(); // full path from here on
         if (!(filter instanceof FileNameExtensionFilter)) {
-          filter = name.toLowerCase(Locale.ENGLISH).endsWith(".cmd") ? filter_cmd
-              : name.toLowerCase(Locale.ENGLISH).endsWith(".bat") ? filter_bat : filter_sh;
+          filter = name.toLowerCase(Locale.ENGLISH).endsWith(".cmd") ? filter_cmd : name.toLowerCase(Locale.ENGLISH).endsWith(".bat") ? filter_bat : filter_sh;
         }
 
         if (file.exists()) {
@@ -81,31 +83,45 @@ final class ExportAction implements ActionListener {
           for (int j = 0; j < owner.getTable().getColumnCount(); j++) {
             Object value = owner.getTable().getValueAt(i, j);
             if (value instanceof String) {
-              String filename = (String) value;
-              File imagefile = new File(filename);
+              File imagefile = new File((String) value);
               List<String> fileID = settings.getFileID(imagefile);
-              // seed_4907_00024_ddim_500
-              String seed = "0", ddim = "0";
-              Matcher matcher = seedPattern.matcher(filename);
-              if (options.seed == Select.AUTO && matcher.matches()) {
-                seed = " --seed " + matcher.group(1);
-              } else if (options.seed != Select.NONE) {
-                seed = " --seed " + options.seedText;
+              String prompt = quote(prompt(options, fileID));
+              List<String> command = new ArrayList<>();
+              for (String ddim : split(ddim(options, imagefile.toString()), "15")) {
+                for (String seed : split(seed(options, imagefile.toString()), null)) {
+                  for (String strength : split(options.strengthText, "0.75")) {
+                    for (String iter : split(options.iterText, "1")) {
+                      for (String samples : split(options.samplesText, "1")) {
+                        command.add(options.commandText);
+                        command.add("--ddim_steps");
+                        command.add(ddim);
+                        if (seed != null) {
+                          command.add("--seed ");
+                          command.add(seed);
+                        }
+                        command.add("--n_iter");
+                        command.add(iter);
+                        command.add("--H");
+                        command.add("" + settings.getHeight(imagefile));
+                        command.add("--W");
+                        command.add("" + settings.getWidth(imagefile));
+                        command.add("--n_samples");
+                        command.add(samples);
+                        if (options.command == Commands.IMG) {
+                          command.add("--strength");
+                          command.add(strength);
+                          command.add("--init-img");
+                          command.add(quote(imagefile.toString()));
+                        }
+                        command.add("--prompt");
+                        command.add(prompt);
+                        commands.add(String.join(" ", command));
+                        command.clear();
+                      }
+                    }
+                  }
+                }
               }
-              matcher = ddimPattern.matcher(filename);
-              if (options.ddim == Select.AUTO && matcher.matches()) {
-                ddim = matcher.group(1);
-              } else {
-                ddim = options.ddimText;
-              }
-              String prompt;
-              if (options.prompt != Select.MANUAL && fileID != null && !fileID.isEmpty()) {
-                prompt = fileID.get(0);
-              } else {
-                prompt = options.promptText;
-              }
-              commands.add(options.commandText + " --ddim_steps " + ddim + seed + " --n_iter 1 --H " + settings.getHeight(imagefile) + " --W "
-                  + settings.getWidth(imagefile) + " --n_samples 1 --prompt \"" + prompt + "\"");
             }
           }
         }
@@ -155,4 +171,59 @@ final class ExportAction implements ActionListener {
 
     }
   }
+
+  protected String prompt(ExportOptions.Options options, List<String> fileID) {
+    if (options.prompt != Select.MANUAL && fileID != null && !fileID.isEmpty()) {
+      return fileID.get(0);
+    } else {
+      return options.promptText;
+    }
+  }
+
+  protected String ddim(ExportOptions.Options options, String filename) {
+    switch (options.ddim) {
+    case AUTO:
+      Matcher matcher = ddimPattern.matcher(filename);
+      if (matcher.matches()) {
+        return matcher.group(1);
+      }
+      // fallthrough
+    case MANUAL:
+      return options.ddimText;
+    case NONE:
+    default:
+      return null;
+    }
+  }
+
+  protected String seed(ExportOptions.Options options, String filename) {
+    switch (options.seed) {
+    case AUTO:
+      Matcher matcher = seedPattern.matcher(filename);
+      if (matcher.matches()) {
+        return matcher.group(1);
+      }
+      // fallthrough
+    case MANUAL:
+      return options.seedText;
+    case NONE:
+    default:
+      return null;
+    }
+  }
+
+  private static String quote(String s) {
+    return "\"" + s.replaceAll("\"", "\\\"") + "\"";
+  }
+
+  private static List<String> split(String s, String fallback) {
+    if (s == null || s.trim().isEmpty()) {
+      return Collections.singletonList(fallback);
+    } else if (s.contains(",")) {
+      return Arrays.asList(s.split("\\s*,\\s*"));
+    } else {
+      return Collections.singletonList(s);
+    }
+  }
+
 }
