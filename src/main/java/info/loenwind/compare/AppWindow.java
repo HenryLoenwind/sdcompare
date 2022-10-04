@@ -28,7 +28,10 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
+import javax.swing.LookAndFeel;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.UIManager.LookAndFeelInfo;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -61,6 +64,45 @@ public class AppWindow {
   private JCheckBox checkSuddenDeath;
   private Component verticalStrut_1;
   private Component verticalStrut_2;
+  private JButton btnNewButton;
+
+  private boolean hasLafs() {
+    LookAndFeelInfo[] feels = UIManager.getInstalledLookAndFeels();
+    return feels != null && feels.length > 1;
+  }
+
+  private final ActionListener nextLaf = new ActionListener() {
+    @Override
+    public void actionPerformed(ActionEvent e) {
+      if (hasLafs()) {
+        LookAndFeel lookAndFeel = UIManager.getLookAndFeel();
+        String name = lookAndFeel.getClass().getName();
+        if (name == null) {
+          name = "";
+        }
+        String found = null;
+        LookAndFeelInfo[] installedLookAndFeels = UIManager.getInstalledLookAndFeels();
+        for (LookAndFeelInfo lookAndFeelInfo : installedLookAndFeels) {
+          String className = lookAndFeelInfo.getClassName();
+          if (name.equals(className)) {
+            found = null;
+          } else if (found == null) {
+            found = className;
+          }
+        }
+        if (found == null) {
+          found = installedLookAndFeels[0].getClassName();
+        }
+        try {
+          UIManager.setLookAndFeel(found);
+          SwingUtilities.updateComponentTreeUI(frame);
+          // frame.pack();
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e2) {
+          e2.printStackTrace();
+        }
+      }
+    }
+  };
 
   public static void run() {
     EventQueue.invokeLater(new Runnable() {
@@ -426,6 +468,14 @@ public class AppWindow {
     gbc_checkSuddenDeath.gridx = 3;
     gbc_checkSuddenDeath.gridy = 8;
     frame.getContentPane().add(checkSuddenDeath, gbc_checkSuddenDeath);
+
+    btnNewButton = new JButton("UI ⇄");
+    btnNewButton.addActionListener(nextLaf);
+    GridBagConstraints gbc_btnNewButton = new GridBagConstraints();
+    gbc_btnNewButton.insets = new Insets(0, 0, 0, 5);
+    gbc_btnNewButton.gridx = 5;
+    gbc_btnNewButton.gridy = 9;
+    frame.getContentPane().add(btnNewButton, gbc_btnNewButton);
   }
 
 }
