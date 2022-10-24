@@ -163,7 +163,7 @@ public class ResultWindow extends JFrame {
         buttonPane.add(btnNewButton);
       }
       { 
-        JButton btnMove = new JButton("Move...");
+        JButton btnMove = new JButton("Move Images");
         btnMove.addActionListener(new MoveAction(this, settings));
         buttonPane.add(btnMove);
       }
