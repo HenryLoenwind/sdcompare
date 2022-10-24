@@ -64,8 +64,8 @@ public class MoveAction implements ActionListener{
             } catch (IOException err) {
                 System.err.println("Failed to create directory!" + err.getMessage());
             }
-        }
 
-        JOptionPane.showMessageDialog(owner,"All files has been moved to the target folder",targetFolder, JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(owner,"All files has been moved to the target folder",targetFolder, JOptionPane.INFORMATION_MESSAGE);
+        }       
     }
 }
