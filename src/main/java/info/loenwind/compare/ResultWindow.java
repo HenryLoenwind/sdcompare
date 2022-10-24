@@ -162,6 +162,11 @@ public class ResultWindow extends JFrame {
         btnNewButton.addActionListener(new ExportAction(this, settings));
         buttonPane.add(btnNewButton);
       }
+      { 
+        JButton btnMove = new JButton("Move...");
+        btnMove.addActionListener(new MoveAction(this, settings));
+        buttonPane.add(btnMove);
+      }
     }
   }
 
