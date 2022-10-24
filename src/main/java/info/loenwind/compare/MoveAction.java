@@ -45,8 +45,7 @@ public class MoveAction implements ActionListener{
     @Override
     public void actionPerformed(ActionEvent e) {
 
-        String root = settings.getTargetFolder().toString();//selectedDirectory.toString();
-
+        String root = settings.getTargetFolder().toString();
         if(settings.isTargetFolderValid())
         {
             try{
